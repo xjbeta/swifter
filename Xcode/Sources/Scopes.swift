@@ -8,7 +8,7 @@
 // swiftlint:disable file_length
 import Foundation
 
-public func scopes(_ scope: @escaping Closure) -> ((HttpRequest) -> HttpResponse) {
+public func scopes(_ scope: @escaping Closure) -> ((HttpRequest) async -> HttpResponse) {
     return { _ in
         scopesBuffer[Process.tid] = ""
         scope()

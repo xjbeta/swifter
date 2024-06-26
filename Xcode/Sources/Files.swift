@@ -7,7 +7,7 @@
 
 import Foundation
 
-public func shareFile(_ path: String) -> ((HttpRequest) -> HttpResponse) {
+public func shareFile(_ path: String) -> ((HttpRequest) async -> HttpResponse) {
     return { _ in
         if let file = try? path.openForReading() {
             let mimeType = path.mimeType()
@@ -26,7 +26,7 @@ public func shareFile(_ path: String) -> ((HttpRequest) -> HttpResponse) {
     }
 }
 
-public func shareFilesFromDirectory(_ directoryPath: String, defaults: [String] = ["index.html", "default.html"]) -> ((HttpRequest) -> HttpResponse) {
+public func shareFilesFromDirectory(_ directoryPath: String, defaults: [String] = ["index.html", "default.html"]) -> ((HttpRequest) async -> HttpResponse) {
     return { request in
         guard let fileRelativePath = request.params.first else {
             return .notFound()
@@ -61,7 +61,7 @@ public func shareFilesFromDirectory(_ directoryPath: String, defaults: [String] 
     }
 }
 
-public func directoryBrowser(_ dir: String) -> ((HttpRequest) -> HttpResponse) {
+public func directoryBrowser(_ dir: String) -> ((HttpRequest) async -> HttpResponse) {
     return { request in
         guard let (_, value) = request.params.first else {
             return .notFound()
@@ -74,7 +74,7 @@ public func directoryBrowser(_ dir: String) -> ((HttpRequest) -> HttpResponse) {
             if try filePath.directory() {
                 var files = try filePath.files()
                 files.sort(by: {$0.lowercased() < $1.lowercased()})
-                return scopes {
+				return await scopes {
                     html {
                         body {
                             table(files) { file in

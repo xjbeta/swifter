@@ -111,34 +111,36 @@ open class HttpServerIO {
         self.state = .stopped
     }
 
-    open func dispatch(_ request: HttpRequest) -> ([String: String], (HttpRequest) -> HttpResponse) {
+    open func dispatch(_ request: HttpRequest) -> ([String: String], (HttpRequest) async -> HttpResponse) {
         return ([:], { _ in HttpResponse.notFound(nil) })
     }
 
     private func handleConnection(_ socket: Socket) {
-        let parser = HttpParser()
-        while self.operating, let request = try? parser.readHttpRequest(socket) {
-            let request = request
-            request.address = try? socket.peername()
-            let (params, handler) = self.dispatch(request)
-            request.params = params
-            let response = handler(request)
-            var keepConnection = parser.supportsKeepAlive(request.headers)
-            do {
-                if self.operating {
-                    keepConnection = try self.respond(socket, response: response, keepAlive: keepConnection)
-                }
-            } catch {
-                print("Failed to send response: \(error)")
-            }
-            if let session = response.socketSession() {
-                delegate?.socketConnectionReceived(socket)
-                session(socket)
-                break
-            }
-            if !keepConnection { break }
-        }
-        socket.close()
+		Task {
+			let parser = HttpParser()
+			while self.operating, let request = try? parser.readHttpRequest(socket) {
+				let request = request
+				request.address = try? socket.peername()
+				let (params, handler) = self.dispatch(request)
+				request.params = params
+				let response = await handler(request)
+				var keepConnection = parser.supportsKeepAlive(request.headers)
+				do {
+					if self.operating {
+						keepConnection = try self.respond(socket, response: response, keepAlive: keepConnection)
+					}
+				} catch {
+					print("Failed to send response: \(error)")
+				}
+				if let session = response.socketSession() {
+					delegate?.socketConnectionReceived(socket)
+					session(socket)
+					break
+				}
+				if !keepConnection { break }
+			}
+			socket.close()
+		}
     }
 
     private struct InnerWriteContext: HttpResponseBodyWriter {

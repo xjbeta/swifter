@@ -33,7 +33,7 @@ public func demoServer(_ publicDir: String) -> HttpServer {
     server["/magic"] = { .ok(.htmlBody("You asked for " + $0.path), ["XXX-Custom-Header": "value"]) }
 
     server["/test/:param1/:param2"] = { request in
-        scopes {
+		await scopes {
             html {
                 body {
                     h3 { inner = "Address: \(request.address ?? "unknown")" }
